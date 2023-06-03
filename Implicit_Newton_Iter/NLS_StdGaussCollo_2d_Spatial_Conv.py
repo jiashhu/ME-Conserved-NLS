@@ -2,74 +2,44 @@ from Collocation import CPN_Converg_2d_Newt
 import os
 import numpy as np
 from Package_G1dMesh import Mesh1d, PeriodicSquare, PeriodicSquareUniform
-from Package_ALE_Geometry import Vtk_out
-from ngsolve import *
-
-Exact_u_Dict = {
-    'Local_Soliton': lambda t: 4/(2*exp(x+y-2*np.sqrt(2)*t)+exp(-(x+y-2*np.sqrt(2)*t)))*exp(1j*(t+(x+y)*np.sqrt(2)/2)),
-    'Test': lambda t: 4/(2*exp(x+y-2*np.sqrt(2)*t)+exp(-(x+y-2*np.sqrt(2)*t)))*exp(1j*(t+(x+y)*np.sqrt(2)/2))
-}
-N_sets_Dict = {
-    'Temporal_Local_Soliton': {
-        'L': 10,
-        '2': [9,15],
-        '3': [2,3,4],
-        '4': [7],
-        'N': 256,
-        'T': '1'
-    },
-    'ME_Local_Soliton': {
-        'L': 10,
-        '2': [20],
-        'N': 64,
-        'T': '1'
-    },
-}
+from ngsolve import Mesh
 
 # Method Param
-dim = 2
-Conv_type = 'ME_Local_Soliton'
-kappa = 2
+kappa = -2
 p = 3
-
-order = 3
-
-N_thres = 1e-8
+n_collo = 3         # k=3 in Feng & Ma & Li
+Eig_opt = True
+N_thres = 1e-10
+T = 0.1
+N_Tsteps = 20
 ref_order = 2
-N_Spatial = N_sets_Dict[Conv_type]['N']
-# Method Param
-Tstr = N_sets_Dict[Conv_type]['T']
-T = eval(Tstr)
-L = N_sets_Dict[Conv_type]['L']
-quad_order = 5 # not used
-Lap_opt = 'peri'
-
-for n_collo in [2]:
-    save_lowest_index = 0
+dim = 2
+Conv_type = 'Spatial_Uni2d_Eig_Mod'
+for order in [3]:
     print('Parameter of this example:')
     print('dim = {}, n_collo = {}, order = {}, N_thres = {}, ref_order = {}'.format(dim, n_collo,order, N_thres, ref_order))
-    print('T = {}, N = {}'.format(Tstr, N_Spatial))
+    print('T = {}, N_Tsteps = {}'.format(T, N_Tsteps))
 
-    suffix = 'L{}_nc{}_o{}_T_{}_{}_HProj_{}_Qorder_{}_Lap_{}'.format(L,n_collo,order,Tstr,N_Spatial,ref_order,quad_order,Lap_opt).replace('/',':')
-    BaseDirPath = './Data_Convergence/{}_{}d/Converg_{}'.format(Conv_type,dim,suffix)
+    suffix = 'nc{}_o{}_{}_{}_HProj_{}'.format(n_collo,order,N_Tsteps,N_thres,ref_order)
+    BaseDirPath = './Data_Convergence/{}/Converg{}d_{}'.format(Conv_type,dim,suffix)
     if not os.path.exists(BaseDirPath):
         os.makedirs(BaseDirPath)
 
-    N_Tsteps_sets = N_sets_Dict[Conv_type][str(n_collo)]
+    if order == 1:
+        h_sets = [40,60,80,100]
+    elif order == 2:
+        h_sets = [10,15,20,25,30]
+    elif order == 3:
+        h_sets = [8,12,16,20,24]
 
-    for N_Tsteps in N_Tsteps_sets:
-        if (save_lowest_index == 0) & (N_Tsteps == max(N_Tsteps_sets)):
-            savefunc_obj = Vtk_out([T],[N_Tsteps],BaseDirPath)
-            save_lowest_index += 1
-        else:
-            savefunc_obj = None
+    for N_Spatial in h_sets:
         dt = T/N_Tsteps
         h = 1/N_Spatial
         # Newton iteration
         res_name = 'dt_{}_h_{}'.format(N_Tsteps,N_Spatial).replace('.','_')+'.npy'
 
         # Generate 1d Periodic Mesh
-        Mesh_Obj = PeriodicSquareUniform(N=N_Spatial,L=L,periodic=True,Rot_opt=True)
+        Mesh_Obj = PeriodicSquareUniform(N_Spatial,periodic=True)
         mesh     = Mesh(Mesh_Obj.ngmesh)
         myObj    = CPN_Converg_2d_Newt(
             mesh, kappa = kappa, p = p, 
@@ -77,11 +47,11 @@ for n_collo in [2]:
             dt = dt, T = T, N_thres = N_thres, 
             ref_order = ref_order, quad_order = 5
         )
-        myObj.Set_Lap_Type(Lap_opt)
+        # myObj.WeakForm4FixP_Iter()
         myObj.WeakForm4Newton_Iter()
-        myObj.Sol_Setting(Exact_u_Dict['_'.join(Conv_type.split('_')[1:])])
+        myObj.Sol_Setting()
         myObj.IniByProj()
-        myObj.Solving(savefunc_obj)
+        myObj.Solving(Eig_opt=Eig_opt)
         Res_dict = {
             "endt_T_set":np.linspace(0,T,N_Tsteps+1)[1:],
             "endt_L2err_ex":myObj.endt_L2_ex_err_set,
@@ -93,8 +63,6 @@ for n_collo in [2]:
             "int_massc":myObj.int_mas_c_set,
             "int_energ":myObj.int_eng_c_set,
             "int_T_set":myObj.int_tset,
-            "endt_N_iter":myObj.endt_Newton_it,
-            "endt_Param_iter":myObj.endt_alpbet_it,
             "endt_exactu_H1":myObj.endt_exactu_H1,
             "int_exactu_H1":myObj.int_exactu_H1,
         }

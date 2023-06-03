@@ -1,3 +1,7 @@
+'''
+    The standard Gauss Collocation Method, Spatial convergence 
+'''
+
 from Collocation import CPN_Converg_1d_Focus_Newt, Lap_Type
 import os
 import numpy as np
@@ -28,44 +32,23 @@ Exact_u_Dict = {
         )
 }
 N_sets_Dict = {
-    'Spatial_Order2_Soliton': {
-        'L': 20,
-        '1': [480, 720, 960, 1200, 1440],
-        '2': [240, 360, 480, 600, 720],
-        '3': [120, 180, 240, 300, 360],
-        '4': [1920],
-        'Tstr': 'np.pi/2',
-        'N_T': 100
-    },
-    'Spatial_Standard_Soliton': {
-        'L': 20,
-        '1': [480, 720, 960, 1200, 1440],
-        '2': [240, 360, 480, 600, 720],
-        '3': [120, 180, 240, 300, 360],
-        'Tstr': '1',
-        'N_T': 1000
-    },
     'Spatial_Bi_Soliton': {
         'L': 20,
-        '1': [480, 720, 960, 1200, 1440],
-        '2': [240, 360, 480, 600, 720],
-        '3': [120, 180, 240, 300, 360],
-        'Tstr': '2',
-        'N_T': 2**9 ## tau = 2**(-8) == 0.004
+        '3': [540],
+        'Tstr': '512',
+        'N_T': 2**15 ## tau = 2**(-5) == 0.03...
     },
     'Spatial_Bi_Soliton_T_Inv': {
         'L': 20,
-        '1': [480, 720, 960, 1200, 1440],
-        '2': [240, 360, 480, 600, 720],
-        '3': [120, 180, 240, 300, 360],
-        'Tstr': '2',
-        'N_T': 100
+        '2': [720],
+        'Tstr': '256',
+        'N_T': 2**13
     }
 }
 # unchanged parameters
 dim = 1
 Conv_type = 'Spatial_Bi_Soliton'
-n_collo = 3         # k=3 in Feng & Ma & Li
+n_collo = 2         # k=3 in Feng & Ma & Li
 N_thres = 1e-10
 kappa = 2
 p = 3               # nonlinear: kappa*|u|^(p-1)
@@ -79,7 +62,7 @@ lp, rp = -L, L
 T = eval(Tstr)
 x_save_ref = np.linspace(lp,rp,2**10+1)
 
-for sp_order in [1,2,3]:
+for sp_order in [3]:
     save_lowest_index = 0
     # Mesh Param
     print('Parameter of this example:')
@@ -87,16 +70,16 @@ for sp_order in [1,2,3]:
     print('T = {}, N_Tsteps = {}'.format(Tstr, N_Tsteps))
 
     suffix = 'L{}_nc{}_o{}_T_{}_{}_HProj_{}_Qorder_{}_Lap_{}'.format(L,n_collo,sp_order,Tstr,N_Tsteps,ref_order,quad_order,Lap_opt).replace('/',':')
-    BaseDirPath = './Data_Convergence/{}_{}d/Converg_{}'.format(Conv_type,dim,suffix)
+
+    BaseDirPath = './Data_Convergence/{}_{}d/NoP_Converg_{}'.format(Conv_type,dim,suffix)
     if not os.path.exists(BaseDirPath):
         os.makedirs(BaseDirPath)
 
     N_sets = N_sets_Dict[Conv_type][str(sp_order)]
 
     for N_Spatial in N_sets:
-        if (save_lowest_index == 0) & (N_Spatial == max(N_sets)):
-            # save once at the maximum N steps
-            savefunc_obj = yxt_1d_out(x_save_ref,[T],[20],BaseDirPath)
+        if True: 
+            savefunc_obj = yxt_1d_out(x_save_ref,[T],[40],BaseDirPath)
             save_lowest_index += 1
         else:
             savefunc_obj = None
@@ -117,7 +100,7 @@ for sp_order in [1,2,3]:
         myObj.WeakForm4Newton_Iter()
         myObj.Sol_Setting(Exact_u_Dict[Conv_type])
         myObj.IniByProj()
-        myObj.Solving(save_obj=savefunc_obj)
+        myObj.Solving(save_obj=savefunc_obj,Eig_opt=True)
 
         Res_dict = {
             "endt_T_set":np.linspace(0,T,N_Tsteps+1)[1:],
@@ -136,8 +119,9 @@ for sp_order in [1,2,3]:
             "int_exactu_H1":myObj.int_exactu_H1,
         }
         try:
-            print(max([max(myObj.endt_H1_ex_err_set),max(myObj.int_H1_ex_err_set)]))
-            print(N_Spatial)
+            print('Max of end and interior H1 error is {}'.format(
+                max([max(myObj.endt_H1_ex_err_set),max(myObj.int_H1_ex_err_set)])))
+            print('N_Spatial is {}'.format(N_Spatial))
         except:
             pass
         np.save(os.path.join(BaseDirPath,res_name),Res_dict,allow_pickle=True)
@@ -148,5 +132,6 @@ for sp_order in [1,2,3]:
                 'tset': savefunc_obj.t_List,
                 'xref': savefunc_obj.x_ref
             },allow_pickle=True)
+            print('NumSol saved Successful!')
         except:
             pass

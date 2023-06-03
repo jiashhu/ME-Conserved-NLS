@@ -1,3 +1,7 @@
+'''
+    The standard Gauss Collocation Method, Temporal convergence 
+'''
+
 from Collocation import CPN_Converg_1d_Focus_Newt, Lap_Type
 import os
 import numpy as np
@@ -27,54 +31,18 @@ Exact_u_Dict = {
         )
 }
 N_sets_Dict = {
-    'Temporal_Order2_Soliton': {
-        'L': 30,
-        '2': [60,70,80,90,100],
-        '3': [20,25,30,35,40],
-        '4': [8,12,14,16,20],
-        'N': 1920,
-        'T': 'np.pi/4'
-    },
     'Temporal_Standard_Soliton': {
-        'L': 40,
-        '2': [60,70,80,90,100],
+        'L': 20,
+        '2': np.array([8,32,128,512,2048]),
         '3': [20,25,30,35,40],
         '4': [8,12,14,16,20],
-        'N': 4000, # spatial decomposition number
+        'N': 1024, # spatial decomposition number
         'T': '1'
-    },
-    'Temporal_Bi_Soliton_T_Inv': {
-        'L': 20,
-        '2': [16,24,32,40,48,56],
-        '3': [12,18,24,30,36,48],
-        '4': [8,12,16,20,24,32],
-        'N': 1024,
-        'T': '2'
-    },
-    'Temporal_Bi_Soliton_T': {
-        'L': 20,
-        '2': [56],
-        '3': [12,18,24,30,36,48],
-        '4': [20],
-        'N': 2048,
-        'T': '2'
-    },
-    'ME_Bi_Soliton_T': {
-        'L': 20,
-        '3': [200],  # tau = T/...
-        'N': 20*2**5,   # h = 2*L/N
-        'T': '2'
-    },
-    'ME_Standard_Soliton': {
-        'L': 40,
-        '3': [20],
-        'N': 400, # spatial decomposition number
-        'T': '1'
-    },
+    }
 }
 Lap_opt = Lap_Type.Diri_opt
 # Mesh Param
-Conv_type = 'ME_Bi_Soliton_T'
+Conv_type = 'Temporal_Standard_Soliton'
 dim = 1
 L = N_sets_Dict[Conv_type]['L']
 N = N_sets_Dict[Conv_type]['N']
@@ -87,14 +55,14 @@ T = eval(Tstr)
 quad_order = 5 # not used
 x_save_ref = np.linspace(lp,rp,2**10+1)
 
-for n_collo in [3]:
+for n_collo in [2]:
     save_lowest_index = 0
     print('Parameter of this example:')
     print('dim = {}, n_collo = {}, order = {}, N_thres = {}, ref_order = {}'.format(dim, n_collo,order, N_thres, ref_order))
     print('T = {}, N = {}'.format(Tstr, N))
 
     suffix = 'L{}_nc{}_o{}_T_{}_{}_HProj_{}_Qorder_{}'.format(L,n_collo,order,Tstr,N,ref_order,quad_order).replace('/',':')
-    BaseDirPath = './Data_Convergence/{}_{}d/Converg_{}'.format(Conv_type,dim,suffix)
+    BaseDirPath = './Data_Convergence/{}_{}d/NoP_Converg_{}'.format(Conv_type,dim,suffix)
     if not os.path.exists(BaseDirPath):
         os.makedirs(BaseDirPath)
 
@@ -103,7 +71,7 @@ for n_collo in [3]:
     for N_Tsteps in N_Tsteps_sets:
         # 如果从来没有存储过，并且时间步长是所有待选参数里面最小的那个
         if (save_lowest_index == 0) & (N_Tsteps == max(N_Tsteps_sets)):
-            savefunc_obj = yxt_1d_out(x_save_ref,[T],[20],BaseDirPath)
+            savefunc_obj = yxt_1d_out(x_save_ref,[T],[40],BaseDirPath)
             save_lowest_index += 1
         else:
             savefunc_obj = None
@@ -124,8 +92,9 @@ for n_collo in [3]:
         myObj.WeakForm4Newton_Iter()
         myObj.Sol_Setting(Exact_u_Dict['_'.join(Conv_type.split('_')[1:])])
         myObj.IniByProj()
-        myObj.Solving(save_obj=savefunc_obj)
+        myObj.Solving(save_obj=savefunc_obj,Eig_opt=True)
         Res_dict = {
+            "tau": dt,
             "endt_T_set":np.linspace(0,T,N_Tsteps+1)[1:],
             "endt_L2err_ex":myObj.endt_L2_ex_err_set,
             "endt_H1err_ex":myObj.endt_H1_ex_err_set,
@@ -155,5 +124,6 @@ for n_collo in [3]:
                 'tset': savefunc_obj.t_List,
                 'xref': savefunc_obj.x_ref
             },allow_pickle=True)
+            print('NumSol saved Successful!')
         except:
             pass

@@ -2,7 +2,6 @@ from Collocation import CPN_Converg_1d_Focus_Newt
 import os
 import numpy as np
 from Package_G1dMesh import Mesh1d
-from Package_MyCode import FO
 from ngsolve import Mesh
 
 # for all time collocation degree, using fem p=3 for tau=h=0.2 to T = 2
@@ -27,7 +26,7 @@ for index_012 in range(3):
     print('T = {}, N_Tsteps = {}'.format(T, N_Tsteps))
 
     suffix = 'L{}_nc{}_o{}_T_{}_{}_{}_HProj_{}'.format(L,n_collo,order,T,N_Tsteps,N_thres,ref_order)
-    BaseDirPath = '/home/jiashhu/Collocation_NLS/Convergence_Res/{}/Converg{}d_{}'.format(Expr_type,dim,suffix)
+    BaseDirPath = './Data_Convergence/{}/Converg{}d_{}'.format(Expr_type,dim,suffix)
     if not os.path.exists(BaseDirPath):
         os.makedirs(BaseDirPath)
 

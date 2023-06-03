@@ -1,6 +1,0 @@
-drawbacks:
-
-* timesteps are too short
-* range of the set is too narrow
-
-lead to split of two waves

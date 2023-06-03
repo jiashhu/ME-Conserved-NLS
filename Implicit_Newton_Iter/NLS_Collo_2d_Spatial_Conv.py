@@ -2,7 +2,6 @@ from Collocation import CPN_Converg_2d_Newt
 import os
 import numpy as np
 from Package_G1dMesh import Mesh1d, PeriodicSquare, PeriodicSquareUniform
-from Package_MyCode import FO
 from ngsolve import *
 
 Exact_u_Dict = {
@@ -39,11 +38,9 @@ for order in [3]:
     print('T = {}, N_Tsteps = {}'.format(Tstr, N_Tsteps))
 
     suffix = 'L{}_nc{}_o{}_T_{}_{}_HProj_{}_Qorder_{}'.format(L,n_collo,order,Tstr,N_Tsteps,ref_order,quad_order).replace('/',':')
-    BaseDirPath = '/home/jiashhu/Collocation_NLS/Convergence_Res/{}_{}d/Converg_{}'.format(Conv_type,dim,suffix)
+    BaseDirPath = './Data_Convergence/{}_{}d/Converg_{}'.format(Conv_type,dim,suffix)
     if not os.path.exists(BaseDirPath):
         os.makedirs(BaseDirPath)
-
-    FO.Copy_Code(OriginDir='/home/jiashhu/Collocation_NLS/',TargetDir=BaseDirPath,CodeName='NLS_Collo_2d_Spatial_Conv.py',suffix=suffix)
 
     N_sets = N_sets_Dict[Conv_type][str(order)]
 

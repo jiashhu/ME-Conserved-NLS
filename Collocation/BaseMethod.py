@@ -1,9 +1,7 @@
 from ngsolve import *
 from Collocation import GL
 import numpy as np
-from Package_MyNgFunc import NGMO
 from Package_MyCode import LogTime, Printer
-import os
 from typing import Callable
 from Package_ALE_Geometry import Vtk_out
 from ngsolve.krylovspace import CGSolver
@@ -27,6 +25,7 @@ class GatherData():
 MatInvOpt_List = ['Iter','Direct']
 MatInvOpt = 'Iter'
 ThreadNum = 40
+
 class Coll_Proj_NLS_FixP():
     def __init__(self,mesh,kappa,p,order,n_collocation,dt,T,thres,quad_order,ref_order) -> None:
         self.mesh = mesh
@@ -295,150 +294,6 @@ class Coll_Proj_NLS_FixP():
             self.Projection()
             self.PP_Pic()
 
-class Coll_Proj_ImpLinExp(Coll_Proj_NLS_FixP):
-    def __init__(self, mesh, kappa, p, order, n_collocation, dt, T, N_thres, quad_order, ref_order) -> None:
-        # still need tolerance for parameter iteration
-        super().__init__(mesh, kappa, p, order, n_collocation, dt, T, N_thres, quad_order, ref_order)
-
-    def Set_Lap_Type(self,Lap_opt):
-        super().Set_Lap_Type(Lap_opt)
-        self.lhs_ImpLinExp = BilinearForm(self.fes_ALL)
-        self.rhs_ImpLinExp = LinearForm(self.fes_ALL)
-        self.ExtrapU = GridFunction(self.fes_ALL)
-        self.extrap_matrix = self.GenerateExtrapMatrix()
-        self.un_old = GridFunction(self.fesc_working)
-
-    def SetCollo_U_N_Ini(self):
-        self.WeakForm4FixP_Iter()
-        self.FixPIteration()
-        self.ExtrapU.vec.data = self.U_N_old.vec
-        self.un_old.vec.data = self.un.vec.data
-
-    def SetCollo_U_N_Extrap(self):
-        '''
-            Extrapolation of u(tn+1,j) by interior point of last interval
-
-            * Using U_N_old to update ExtrapU (used in implicit linear scheme)
-        '''     
-        for ii in range(self.n_collo):
-            tmp = np.zeros(self.fesc_working.ndof,dtype=np.complex_)
-            tmp += self.extrap_matrix[ii,0]*self.un_old.vec.FV().NumPy()
-            for jj in range(self.n_collo):
-                tmp += self.extrap_matrix[ii,1+jj]*self.U_N_old.components[jj].vec.FV().NumPy()
-            self.ExtrapU.components[ii].vec.data = BaseVector(tmp)
-
-    def WeakForm4ImpLinExp(self):
-        # Different from iteration where initial U_N_old constructed by copy of un
-        # U_N_old (used in GetExtrap) saves numerical functions on collocation points of the last time interval
-        self.lhs_ImpLinExp += 1j*InnerProduct(self.D_mat*self.U_N, self.V_N)*dx - InnerProduct(grad(self.U_N),grad(self.V_N))*dx
-        # semi-implicit part for nonlinear term
-        for ii in range(self.n_collo):
-            uii = self.ExtrapU.components[ii]
-            fu2 = self.f_norm2(Norm(uii))
-            self.lhs_ImpLinExp += fu2*(self.U_N[ii]*self.V_N[ii])*dx
-
-        # rhs: from collocation differntial matrix, components of initial data
-        self.rhs_ImpLinExp += -1j*(self.un*InnerProduct(self.D_row,self.V_N))*dx
-
-    def GenerateExtrapMatrix(self):
-        # Gauss points and differential matrix of Lagrangian basis on canonical interval [-1,1]
-        nodes, weights    = GL.generate_Gauss_formula(-1, 1, self.n_collo)
-        # 内点的Lagrange基函数在下一个区间内点上的值
-        next_nodes = nodes + 2 
-        interp_nodes = np.append(np.array([-1]),nodes)
-        extrap_matrix = np.zeros((self.n_collo,len(interp_nodes)))
-        for jj in range(len(interp_nodes)):
-            # jj-th Lagrangian polynomial's value on next time interval interior points
-            extrap_matrix[:,jj] = GL.Lagrange_Basis(jj,interp_nodes,next_nodes)
-        return extrap_matrix
-
-    def SolvingColloFEM(self):
-        # after updating ExtrapU, then update un_aux (input of projection)
-        self.lhs_ImpLinExp.Assemble()
-        self.rhs_ImpLinExp.Assemble()
-        self.U_N_old.vec.data = self.lhs_ImpLinExp.mat.Inverse(self.fes_ALL.FreeDofs(),inverse='pardiso')*self.rhs_ImpLinExp.vec
-
-        vec_update = self.extrap_coeff[0]*self.un.vec.FV().NumPy().copy()
-        for ii in range(self.n_collo):
-            vec_update += self.extrap_coeff[ii+1]*(self.U_N_old.components[ii].vec.FV().NumPy().copy())
-        self.un_aux.vec.data = BaseVector(vec_update)
-
-    def Solving(self,PP_Pic:Callable,so:Vtk_out=None,Eig_opt=False):
-        # 计算更新后的解以及保存
-        SetNumThreads(ThreadNum)
-        with TaskManager():
-            while (self.t<self.T) & (abs(self.t-self.T)>1e-10):
-                if self.t == 0:
-                    PP_Pic(True)
-                    self.SetCollo_U_N_Ini()
-                    # save data
-                else:
-                    # update self.ExtrapU before update self.t
-                    self.SetCollo_U_N_Extrap()
-                if so is None:
-                    pass
-                else:
-                    so.Output(tnow=self.t,function=self.un,command='')
-                self.t += self.dt
-                print('{}: Now time is {}'.format(LogTime(),self.t))
-                self.SolvingColloFEM()
-                # save the last time un before modification by ME projection
-                self.un_old.vec.data = self.un.vec
-                self.Projection(Eig_opt)
-                PP_Pic()
-                # save the final fig
-                if so is None:
-                    pass
-                elif abs(self.t-self.T)<1e-10:
-                    so.Output(tnow=self.t,function=self.un,command='')
-
-class Coll_Proj_ImpLinExp_fu(Coll_Proj_ImpLinExp):
-    def __init__(self, mesh, kappa, p, order, n_collocation, dt, T, N_thres, quad_order, ref_order) -> None:
-        super().__init__(mesh, kappa, p, order, n_collocation, dt, T, N_thres, quad_order, ref_order)
-    
-    def Set_Lap_Type(self,Lap_opt):
-        super(Coll_Proj_ImpLinExp,self).Set_Lap_Type(Lap_opt)
-        self.lhs_ImpLinExp = BilinearForm(self.fes_ALL)
-        self.rhs_ImpLinExp = LinearForm(self.fes_ALL)
-        self.Extrapfu = GridFunction(self.fes_ALL)
-        self.Interiorfu = GridFunction(self.fes_ALL)
-        self.extrap_matrix = self.GenerateExtrapMatrix()
-
-    def SetCollo_U_N_Ini(self):
-        self.WeakForm4FixP_Iter()
-        # Initialize U_N_old
-        self.FixPIteration()
-        for jj in range(self.n_collo):
-            self.Extrapfu.components[jj].Set(self.f_norm2(Norm(self.U_N_old.components[jj])))
-
-    def SetCollo_U_N_Extrap(self):
-        '''
-            Extrapolation of fu(tn+1,j) by interior point of last interval
-
-            * Using U_N_old to update Extrapfu (used in implicit linear scheme)
-        '''     
-        for jj in range(self.n_collo):
-            self.Interiorfu.components[jj].Set(self.f_norm2(Norm(self.U_N_old.components[jj])))
-
-        for ii in range(self.n_collo):
-            tmp = np.zeros(self.fesc_working.ndof,dtype=np.complex_)
-            for jj in range(self.n_collo):
-                tmp += self.extrap_matrix[ii,jj]*self.Interiorfu.components[jj].vec.FV().NumPy()
-            self.Extrapfu.components[ii].vec.data = BaseVector(tmp)
-
-    def WeakForm4ImpLinExp(self):
-        # Different from iteration where initial U_N_old constructed by copy of un
-        # U_N_old (used in GetExtrap) saves numerical functions on collocation points of the last time interval
-        self.lhs_ImpLinExp += 1j*InnerProduct(self.D_mat*self.U_N, self.V_N)*dx - InnerProduct(grad(self.U_N),grad(self.V_N))*dx
-        # semi-implicit part for nonlinear term
-        for ii in range(self.n_collo):
-            fu2 = self.Extrapfu.components[ii]
-            self.lhs_ImpLinExp += fu2*(self.U_N[ii]*self.V_N[ii])*dx
-
-        # rhs: from collocation differntial matrix, components of initial data
-        self.rhs_ImpLinExp += -1j*(self.un*InnerProduct(self.D_row,self.V_N))*dx
-
-
 class Coll_Proj_NLS_Newt(Coll_Proj_NLS_FixP):
     def __init__(self, mesh, kappa, p, order, n_collocation, dt, T, thres, quad_order, ref_order) -> None:
         super().__init__(mesh, kappa, p, order, n_collocation, dt, T, thres, quad_order, ref_order)
@@ -586,57 +441,6 @@ class CPN_Converg_1d_Focus_FixP(Coll_Proj_NLS_FixP):
         self.mas_c_set.append(Mht)
         self.eng_c_set.append(Eht)
 
-class CheckComplexOperation():
-    '''
-        myObj = CheckComplexOperation(mesh, h=h, order=1)
-        myObj.TestVectorInnerProduct()
-        myObj.GetRealMV()
-        myObj.CheckMat()
-    '''
-    def __init__(self,mesh,h,order) -> None:
-        self.mesh = mesh
-        self.h = h
-        self.order = order  
-        self.fesc = H1(self.mesh, order=self.order, complex=True)
-        self.fes_V = self.fesc**2
-        self.fes = H1(self.mesh, order=self.order)
-
-    def TestVectorInnerProduct(self):
-        U, V = self.fes_V.TnT()
-        lhs = BilinearForm(self.fes_V)
-        VCF = CF((1j,1,1j,1),dims=(2,2))
-        lhs += InnerProduct(V,VCF*U)*dx
-        rhs = LinearForm(self.fes_V)
-        rhs += V[0]*dx
-        lhs.Assemble()
-        rhs.Assemble()
-        row, col, val = lhs.mat.COO()
-        self.Complex2Mat = NGMO.myCOO(list(row),list(col),list(val),*lhs.mat.shape,tag='scipy').todense()
-        self.Complex2vec = rhs.vec.FV().NumPy().copy()
-        ndof = self.fesc.ndof
-        self.L11 = self.Complex2Mat[:ndof,:ndof]
-        self.L12 = self.Complex2Mat[:ndof,ndof:]
-        self.L21 = self.Complex2Mat[ndof:,:ndof]
-        self.L22 = self.Complex2Mat[ndof:,ndof:]
-        # self.L12 -- V1 U2 -- coef 1
-        # self.L21 -- V2 U1 -- coef -1j
-    
-    def GetRealMV(self):
-        u, v = self.fes.TnT()
-        lhs = BilinearForm(self.fes)
-        rhs = LinearForm(self.fes)
-        lhs += u*v*dx
-        rhs += v*dx
-        lhs.Assemble()
-        rhs.Assemble()
-        row, col, val = lhs.mat.COO()
-        self.RealMat = NGMO.myCOO(list(row),list(col),list(val),*lhs.mat.shape,tag='scipy').todense()
-        self.Realvec = rhs.vec.FV().NumPy().copy()
-
-    def CheckMat(self):
-        res = np.linalg.norm(self.L21-(-1j)*self.RealMat)
-        print(res)
-
 class CPN_Converg_1d_Focus_Newt(Coll_Proj_NLS_Newt):
     def __init__(self, mesh, kappa, p, order, n_collocation, dt, T, N_thres, quad_order=5, ref_order=1) -> None:
         # Model Param focusing: kappa = 2, p = 3
@@ -744,7 +548,6 @@ class CPN_Converg_1d_Focus_Newt(Coll_Proj_NLS_Newt):
                 elif abs(self.t-self.T)<1e-10:
                     save_obj.Output(mesh=self.mesh,tnow=self.t,function=[Norm(self.un)],command='')
 
-
 class CPN_Converg_2d_Newt(CPN_Converg_1d_Focus_Newt):
     def __init__(self, mesh, kappa, p, order, n_collocation, dt, T, N_thres, quad_order, ref_order) -> None:
         super().__init__(mesh, kappa, p, order, n_collocation, dt, T, N_thres, quad_order, ref_order)
@@ -817,15 +620,3 @@ class PP_Process:
                 self.int_eng_c_set.append(Eht)
                 self.int_tset.append(t_in_collo)
                 self.int_exactu_H1.append(Exactu_H1_norm)
-
-class CPNLS_SemiImpLin(PP_Process,Coll_Proj_ImpLinExp):
-    def __init__(self, mesh, kappa, p, order, n_collocation, dt, T, N_thres, quad_order, ref_order) -> None:
-        super().__init__(mesh, kappa, p, order, n_collocation, dt, T, N_thres, quad_order, ref_order)
-        # for back compatible
-        self.NLS_iters = 0
-
-class CPNLS_SemiImpLinfu(PP_Process,Coll_Proj_ImpLinExp_fu):
-    def __init__(self, mesh, kappa, p, order, n_collocation, dt, T, N_thres, quad_order, ref_order) -> None:
-        super().__init__(mesh, kappa, p, order, n_collocation, dt, T, N_thres, quad_order, ref_order)
-        # for back compatible
-        self.NLS_iters = 0
