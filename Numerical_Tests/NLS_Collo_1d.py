@@ -2,13 +2,10 @@ import os
 import sys
 import json
 import inspect
-sys.path.append('/Users/liubocheng/Documents/2023/ME-Conserved-NLS/Packages')
-
 import numpy as np
 from Collocation import CPN_Converg_1d_Focus_Newt
 from Package_G1dMesh import Mesh1d
-from Package_MyCode import FO
-from Package_ALE_Geometry import yxt_1d_out
+from IO_Func import yxt_1d_out
 from ngsolve import *
 from Exact_Sol import *
 

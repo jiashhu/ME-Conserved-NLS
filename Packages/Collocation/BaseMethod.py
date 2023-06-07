@@ -1,9 +1,8 @@
 from ngsolve import *
 from Collocation import GL
 import numpy as np
-from Package_MyCode import LogTime, Printer
 from typing import Callable
-from Package_ALE_Geometry import Vtk_out
+from IO_Func import Vtk_out, LogTime, Printer
 from ngsolve.krylovspace import CGSolver
 import time
 
