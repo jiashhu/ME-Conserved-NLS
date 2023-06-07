@@ -24,13 +24,12 @@ class GatherData():
 
 MatInvOpt_List = ['Iter','Direct']
 MatInvOpt = 'Iter'
-ThreadNum = 40
 
 class Coll_Proj_NLS_FixP():
     def __init__(self,mesh,kappa,p,order,n_collocation,dt,T,thres,quad_order,ref_order) -> None:
         self.mesh = mesh
         self.order = order
-        self.dt = dt        # 不变的时间步长
+        self.dt = dt       
         self.n_collo = n_collocation
         self.Quad_order = quad_order
         self.NLS_Threshold = thres
@@ -59,7 +58,7 @@ class Coll_Proj_NLS_FixP():
             self.fesc_working_ref = self.fesc_Diri_ref
             self.GeneInv_Lap()
 
-        # 每一个时间配点对应一个空间有限元函数
+        # every collocation point is assigned with a spatial fem func
         self.fes_ALL = self.fesc_working**self.n_collo
         self.U_N = self.fes_ALL.TrialFunction()
         self.V_N = self.fes_ALL.TestFunction()
@@ -68,12 +67,12 @@ class Coll_Proj_NLS_FixP():
         self.U_N_update = GridFunction(self.fes_ALL)
         self.lhs_Niter = BilinearForm(self.fes_ALL)
         self.rhs_Niter = LinearForm(self.fes_ALL)
-        # tn or 更新后tn+1时的有限元解
+        # tn or updated fem sol at tn+1
         self.un = GridFunction(self.fesc_working)
         self.un_aux = GridFunction(self.fesc_working)
         self.eu_ref = GridFunction(self.fesc_working_ref)
 
-        # GL_differential_matrix (需要是ngsolve识别的矩阵类型)
+        # GL_differential_matrix 
         # 初值对应  与  配点对应  与  多项式插值系数
         self.D_mat, self.D_row, self.extrap_coeff, self.collo_inner_nodes = self.GenerateD_mat()
         # FixPoint iterations
@@ -130,13 +129,12 @@ class Coll_Proj_NLS_FixP():
         Interval_Change = 2/self.dt
         D = D*Interval_Change
         D_lhs = D[1:,1:]
-        # check 第1个基函数在其它点上的值
         D_rhs = D[1:,0]
         # transform numpy matrix to ngsolve
         D_lhs_ng = CF(tuple(D_lhs.flatten()),dims=(self.n_collo,self.n_collo))
         D_rhs_ng = CF(tuple(D_rhs.flatten()),dims=(self.n_collo,1))
 
-        # 所有Lagrange基函数在x=1处的值
+        # Compute values of all Lagrange bases at x=1
         extrap_coeff = np.zeros(self.n_collo+1)
         extrap_coeff[0] = GL.Lagrange_Basis(0,nodes_with_un,1)
         for ii in range(self.n_collo):
@@ -164,7 +162,6 @@ class Coll_Proj_NLS_FixP():
             self.U_N_old.components[ii].vec.data = self.un.vec.data
         self.NLS_iters = 0
         err_N = 0
-        # 以threshold进行牛顿迭代
         while err_N>self.NLS_Threshold or self.NLS_iters==0:
             self.lhs_Niter.Assemble()
             self.rhs_Niter.Assemble()
@@ -185,11 +182,9 @@ class Coll_Proj_NLS_FixP():
         self.un_aux.vec.data = BaseVector(vec_update)
             
     def IniByProj(self):
-        # 通过投影设置初值 set self.un
         pass
 
     def PP_Pic(self):
-        # 后处理与保存数据
         pass
 
     def GetMassEnergy(self):
@@ -287,7 +282,6 @@ class Coll_Proj_NLS_FixP():
             )
 
     def Solving(self):
-        # 计算更新后的解以及保存
         while (self.t<self.T) & (abs(self.t-self.T)>1e-10):
             self.t += self.dt
             self.FixPIteration()
@@ -300,7 +294,7 @@ class Coll_Proj_NLS_Newt(Coll_Proj_NLS_FixP):
 
     def WeakForm4Newton_Iter(self):
         # f expression is kappa x^{(p-1)/2}
-        # 修改有限元空间，改成两倍的复变量，从而涵盖共轭部分
+        # couple the complex fem space to cover the conjugate part
         self.fes_ALL_db = self.fes_ALL**2
         self.U, self.V = self.fes_ALL_db.TnT()
         self.U_N, self.U_N_conj = self.U[0,:], self.U[1,:]
@@ -345,11 +339,10 @@ class Coll_Proj_NLS_Newt(Coll_Proj_NLS_FixP):
         err_tmp = GridFunction(self.fesc_working)
         for ii in range(self.n_collo):
             self.U_N_old.components[ii].vec.data = self.un.vec
-            # check
             self.U_N_old_conj.components[ii].vec.data = BaseVector(self.un.vec.FV().NumPy().conj())
         self.NLS_iters = 0
         err_N = np.inf
-        # 以threshold进行牛顿迭代
+        # Newton iteration with the given threshold
         # CG_Max_Residue = 0
         # Max_Iters = 0
         N_Iter_CG_Info = GatherData(IO) 
@@ -379,10 +372,9 @@ class Coll_Proj_NLS_Newt(Coll_Proj_NLS_FixP):
             vec_update += self.extrap_coeff[ii+1]*(self.U_N_old.components[ii].vec.FV().NumPy().copy())
         self.un_aux.vec.data = BaseVector(vec_update)
 
-    def Solving(self,save_obj:Vtk_out=None,Eig_opt=False):
-        # 计算更新后的解以及保存
+    def Solving(self,save_obj:Vtk_out=None,Eig_opt=False,ThreadNum=10):
         SetNumThreads(ThreadNum)
-        with TaskManager(pajetrace=10**8):
+        with TaskManager():
             while (self.t<self.T) & (abs(self.t-self.T)>1e-10):
                 if save_obj is None:
                     pass
@@ -395,7 +387,6 @@ class Coll_Proj_NLS_Newt(Coll_Proj_NLS_FixP):
                 self.Newton_Iteration()
                 self.Projection(Eig_opt)
                 self.PP_Pic()
-                # save the final fig
                 if save_obj is None:
                     pass
                 elif abs(self.t-self.T)<1e-10:
@@ -428,9 +419,9 @@ class CPN_Converg_1d_Focus_FixP(Coll_Proj_NLS_FixP):
         print('L^\infty(0,{},H^1) error is {}'.format(self.T, max(self.H1err_set)))
 
     def PP_Pic(self):
-        # 此时self.un对应self.t时刻的un
+        # Now: self.un corresponds to un at self.t
         self.tParam.Set(self.t)
-        # t时刻的精确解在有限元空间中的投影
+        # Projeciton of the exact solution at t in a finite element space (of order ref_order higher)
         self.exactu_Proj.Set(self.exact_u_ng)
         self.eu.vec.data = self.un.vec - self.exactu_Proj.vec
         L2err_instant = np.sqrt(Integrate(InnerProduct(self.eu, self.eu),self.mesh,element_wise=False))
@@ -454,14 +445,14 @@ class CPN_Converg_1d_Focus_Newt(Coll_Proj_NLS_Newt):
         self.exactu_Proj_ref = GridFunction(self.fesc_working_ref)
         self.u_num_Proj_res = GridFunction(self.fesc_working_ref)
         self.tParam = Parameter(0)
-        # collect err at end points
+        # Collect err at end points
         self.endt_mas_c_set = []
         self.endt_eng_c_set = []
         self.endt_H1_ex_err_set = []
         self.endt_L2_ex_err_set = []
         self.endt_Newton_it = []
         self.endt_alpbet_it = []
-        # collect err at interior points
+        # Collect err at interior points
         self.int_mas_c_set = []
         self.int_eng_c_set = []
         self.int_H1_ex_err_set = []
@@ -469,7 +460,7 @@ class CPN_Converg_1d_Focus_Newt(Coll_Proj_NLS_Newt):
         self.int_tset = []
         self.int_exactu_H1  = []
         self.endt_exactu_H1 = []
-        # related to kappa and p
+        # Related to kappa and p
         self.exact_u_ng = exact_u(self.tParam)
 
     def IniByProj(self):
@@ -500,7 +491,7 @@ class CPN_Converg_1d_Focus_Newt(Coll_Proj_NLS_Newt):
             self.endt_mas_c_set.append(Mht)
             self.endt_eng_c_set.append(Eht)
         else:
-            # 此时self.un对应self.t时刻的un, err at end point
+            # At this time, self.un corresponds to un, err at end point at self.t
             L2_err_instant, H1_err_instant, Mht, Eht, Exactu_H1_norm = self.PostProcess_T(self.t,self.un)
             self.endt_H1_ex_err_set.append(H1_err_instant)
             self.endt_L2_ex_err_set.append(L2_err_instant)
@@ -509,7 +500,7 @@ class CPN_Converg_1d_Focus_Newt(Coll_Proj_NLS_Newt):
             self.endt_Newton_it.append(self.NLS_iters)
             self.endt_alpbet_it.append(self.Param_iters)
             self.endt_exactu_H1.append(Exactu_H1_norm)
-            # err at interior collocation points
+            # Err at interior collocation points
             for ii,col_x in enumerate(self.collo_inner_nodes):
                 t_in_collo = self.t - self.dt + self.dt/2*(col_x+1)
                 L2_err_instant, H1_err_instant, Mht, Eht, Exactu_H1_norm = self.PostProcess_T(t_in_collo, self.U_N_old.components[ii])
@@ -520,8 +511,8 @@ class CPN_Converg_1d_Focus_Newt(Coll_Proj_NLS_Newt):
                 self.int_tset.append(t_in_collo)
                 self.int_exactu_H1.append(Exactu_H1_norm)
         
-    def Solving(self,save_obj:Vtk_out=None,Eig_opt=False,IO=False):
-        # 计算更新后的解以及保存
+    def Solving(self,save_obj:Vtk_out=None,Eig_opt=False,IO=False,ThreadNum=10):
+        # Updating numerical solution
         myPrinter = Printer(10)
         SetNumThreads(ThreadNum)
         with TaskManager():
@@ -542,7 +533,7 @@ class CPN_Converg_1d_Focus_Newt(Coll_Proj_NLS_Newt):
                 end_time = time.time()
                 self.PPtime += end_time - start_time
                 self.PP_Pic()
-                # save the final fig
+                # Save the final fig
                 if save_obj is None:
                     pass
                 elif abs(self.t-self.T)<1e-10:
@@ -558,14 +549,14 @@ class PP_Process:
         self.exactu_Proj_ref = GridFunction(self.fesc_working_ref)
         self.u_num_Proj_res = GridFunction(self.fesc_working_ref)
         self.tParam = Parameter(0)
-        # collect err at end points
+        # Collect err at end points
         self.endt_mas_c_set = []
         self.endt_eng_c_set = []
         self.endt_H1_ex_err_set = []
         self.endt_L2_ex_err_set = []
         self.endt_Newton_it = []
         self.endt_alpbet_it = []
-        # collect err at interior points
+        # Collect err at interior points
         self.int_mas_c_set = []
         self.int_eng_c_set = []
         self.int_H1_ex_err_set = []
@@ -573,7 +564,6 @@ class PP_Process:
         self.int_tset = []
         self.int_exactu_H1  = []
         self.endt_exactu_H1 = []
-        # related to kappa and p
         self.exact_u_ng = exact_u(self.tParam)
 
     def IniByProj(self):
@@ -601,7 +591,6 @@ class PP_Process:
             self.endt_mas_c_set.append(Mht)
             self.endt_eng_c_set.append(Eht)
         else:
-            # 此时self.un对应self.t时刻的un, err at end point
             L2_err_instant, H1_err_instant, Mht, Eht, Exactu_H1_norm = self.PostProcess_T(self.t,self.un)
             self.endt_H1_ex_err_set.append(H1_err_instant)
             self.endt_L2_ex_err_set.append(L2_err_instant)
@@ -610,7 +599,7 @@ class PP_Process:
             self.endt_Newton_it.append(self.NLS_iters)
             self.endt_alpbet_it.append(self.Param_iters)
             self.endt_exactu_H1.append(Exactu_H1_norm)
-            # err at interior collocation points
+            # Err at interior collocation points
             for ii,col_x in enumerate(self.collo_inner_nodes):
                 t_in_collo = self.t + self.dt/2*(col_x-1)
                 L2_err_instant, H1_err_instant, Mht, Eht, Exactu_H1_norm = self.PostProcess_T(t_in_collo, self.U_N_old.components[ii])

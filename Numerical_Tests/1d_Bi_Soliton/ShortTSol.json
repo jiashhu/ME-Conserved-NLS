@@ -1,0 +1,13 @@
+{
+  "dim": 1,
+  "Sol_Type": "Bi_Soliton",
+  "L": 20,
+  "N_S": 2048,
+  "N_T": 20,
+  "T": 2,
+  "k_T": 4,
+  "p_S": 3,
+  "Output": "Sol",
+  "Ncore": 20,
+  "Test_Name": "ShortTSol"
+}

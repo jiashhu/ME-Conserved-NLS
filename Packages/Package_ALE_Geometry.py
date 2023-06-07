@@ -1,15 +1,8 @@
 from cmath import inf
-from math import fabs
-from pydoc import doc
-from sys import platform
 import os
-from tkinter import Grid
 from netgen.geom2d import *
 from ngsolve import *
 import numpy as np
-from scipy.sparse import coo
-from sympy import false
-
 from collections import Counter
 import scipy
 from scipy.sparse import linalg as LA
@@ -23,7 +16,6 @@ try:
     from Package_MyNgFunc import NGMO
 except:
     pass
-# from Package_MyCode import do_profile
 
 Rot = lambda x: (x[1],-x[0])
 def Rotation2d(x: tuple, theta: float):
@@ -358,7 +350,8 @@ class SplineSeg3():
 
 def PieceSplineSegs(ctr_point):
     '''
-        输入分片三次样条的控制点，nx2 ndarray，输出SplineSeg3构成的list
+        control points of piecewise cubic splines, nx2 ndarray
+        Output: list that constructs SplineSeg3
     '''
     N = len(ctr_point)
     ctr_point = np.array(ctr_point)
@@ -542,15 +535,16 @@ def GetInterfaceCoord(fes,mesh,InterfaceIndex='bnd'):
     
 def Rot2d(theta):
     '''
-        逆时针旋转theta角度    
+        Rotated theta anticlockwise    
     '''
     return np.array([[np.cos(theta), -np.sin(theta)],
                     [np.sin(theta), np.cos(theta)]])
 
 def Distant(Geometry_in_Splines,Coords,pnums):
     '''
-        生成pnums个边界的采样点，从中计算每个Coords到这些采样点中的最近的距离
-        输入： Geometry_in_Splines: SplineSeg3() 的实例构成的list
+        Generate sampling points on the boundary of number pnums
+        and compute the nearest distance of all Coords
+        input: list of Geometry_in_Splines: SplineSeg3()
     '''
     Ref_Points = []
     t_sets = np.linspace(0,1,pnums)
@@ -666,7 +660,7 @@ class HarmonicExt(Extension):
         return lhs, rhs
 
     def Solving(self,Pos_interface,dt):
-        ## 设置Dirichlet边界条件：通过给定Interface上的值来求解Harmonic Extension
+        ## Set Dirichlet boundary condition: By values on given Interface to solve Harmonic Extension
         self.gInterface.Interpolate(Pos_interface,definedon=self.mesh.Boundaries('bnd'))
         if self.Ename == 'X':
             self.gFixBnd.Interpolate(CoefficientFunction((x,y)),definedon=self.mesh.Boundaries('b|r|t|l'))
@@ -674,15 +668,15 @@ class HarmonicExt(Extension):
             self.gFixBnd.Interpolate(CoefficientFunction((0,0)),definedon=self.mesh.Boundaries('b|r|t|l'))
         self.g0.vec.data = self.gInterface.vec + self.gFixBnd.vec
 
-        ## 求解延拓方程
+        ## solving extension equation
         self.lhs.Assemble()
         self.rhs.Assemble()
         self.sol.vec.data = self.g0.vec+self.lhs.mat.Inverse(freedofs=self.fesall.FreeDofs())*self.rhs.vec
         if self.Ename == 'X':
-            ## 此时，sol是延拓的位置
+            ## at this time, sol is the extended position
             self.Disp.vec.data = self.sol.vec - self.Initial_Pos.vec 
         elif self.Ename == 'V':
-            ## 此时，sol是延拓的速度
+            ## at this time, sol is the extended velocity
             self.Disp.vec.data += BaseVector(dt*self.sol.vec.FV().NumPy())
             
 class V_BiHarmonicExt(Extension):
@@ -695,7 +689,7 @@ class V_BiHarmonicExt(Extension):
         
     def FEMSetting(self):
         ## Scalar Biharmonic Extension By Mixed FEM
-        # FEM需要的weak form, Dirichlet bnd
+        # FEM weak form, Dirichlet bnd
         self.n = specialcf.normal(2)
         order = 2
         self.V = HDivDiv(self.mesh, order=order-1)
@@ -721,8 +715,9 @@ class V_BiHarmonicExt(Extension):
         return lhs, rhs
     
     def Solving(self,V_interface,dt):
-        ## 设置Dirichlet边界条件：通过给定Interface上的值来求解BiHarmonic Extension，分为两个标量方程来求解
-        ## 此时边界条件g0是[X,Q]上的函数，因此修改[1]component，velocity延拓
+        ## Set Dirichlet boundary condition: Set values on Interface to solve BiHarmonic Extension
+        ## split as two scalar equations
+        ## Thus, boundary value g0 is a funciton on [X,Q], thus need to revise [1]component as velocity extension
         self.gInterface.components[1].Interpolate(V_interface[0],definedon=self.mesh.Boundaries('bnd'))
         self.gFixBnd.components[1].Interpolate(CoefficientFunction(0),definedon=self.mesh.Boundaries('b|r|t|l'))
         self.g0.vec.data = self.gInterface.vec + self.gFixBnd.vec
@@ -734,8 +729,7 @@ class V_BiHarmonicExt(Extension):
         self.ScalarTmp.Interpolate(self.sol.components[1])
         self.Disp.components[0].vec.data += BaseVector(dt*self.ScalarTmp.vec.FV().NumPy())
         
-        
-        ## 延拓速度的y分量
+        ## extend y of velocity
         self.gInterface.components[1].Interpolate(V_interface[1],definedon=self.mesh.Boundaries('bnd'))
         self.gFixBnd.components[1].Interpolate(CoefficientFunction(0),definedon=self.mesh.Boundaries('b|r|t|l'))
         self.g0.vec.data = self.gInterface.vec + self.gFixBnd.vec
@@ -782,8 +776,6 @@ class V_BiHarmonicExt2(Extension):
         return lhs, rhs
     
     def Solving(self,V_interface,dt):
-        ## 设置Dirichlet边界条件：通过给定Interface上的值来求解BiHarmonic Extension，分为两个标量方程来求解
-        ## 此时边界条件g0是[X,Q]上的函数，因此修改[1]component，velocity延拓
         self.gInterface.components[1].Interpolate(V_interface[0],definedon=self.mesh.Boundaries('bnd'))
         self.gFixBnd.components[1].Interpolate(CoefficientFunction(0),definedon=self.mesh.Boundaries('b|r|t|l'))
         self.g0.vec.data = self.gInterface.vec + self.gFixBnd.vec
@@ -795,8 +787,6 @@ class V_BiHarmonicExt2(Extension):
         self.ScalarTmp.Interpolate(self.sol.components[1])
         self.Disp.components[0].vec.data += BaseVector(dt*self.ScalarTmp.vec.FV().NumPy())
         
-        
-        ## 延拓速度的y分量
         self.gInterface.components[1].Interpolate(V_interface[1],definedon=self.mesh.Boundaries('bnd'))
         self.gFixBnd.components[1].Interpolate(CoefficientFunction(0),definedon=self.mesh.Boundaries('b|r|t|l'))
         self.g0.vec.data = self.gInterface.vec + self.gFixBnd.vec
