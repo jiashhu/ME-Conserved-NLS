@@ -1,11 +1,62 @@
 import os
 import numpy as np
 from ngsolve import *
+import ngsolve
 from pyevtk.hl import polyLinesToVTK
 from netgen.meshing import Mesh, MeshPoint, Element1D, FaceDescriptor, Element0D, Element2D
 from netgen.csg import Pnt
 import pytz
 import datetime
+try:
+    import matplotlib as mpl
+except:
+    print('no matplotlib is found')
+from cycler import cycler
+
+def Get_File_List(file_path):
+    '''
+        output: list of file name, ranked by created time
+    '''
+    dir_list = os.listdir(file_path)
+    if not dir_list:
+        print('File path is empty!!')
+        return None
+    else:
+        dir_list = sorted(dir_list, key=lambda x: os.path.getctime(os.path.join(file_path,x)))
+        return dir_list
+
+class PlotLineStyleObj():
+    def __init__(self) -> None:
+        self.ColorCycle = None
+        self.MarkerCycle = None
+        self.LinestyleCycle = None
+
+    def SetColorCycle(self):
+        self.ColorCycle = cycler('color',[
+                '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', 
+                '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', 
+                '#bcbd22', '#17becf', 'k', 'b'
+            ])
+
+    def SetMarkerCycle(self):
+        self.MarkerCycle = cycler('marker',[
+                '.',',','o','v'
+            ]*3)
+    
+    def SetLinestyleCycle(self):
+        self.LinestyleCycle = cycler('linestyle',['-','--','-.',':']*3)
+
+    def SetPropCycle(self, linewidth=2, markersize=16,
+        markeredgewidth = 2, fontsize=14):
+        mpl.rcParams['axes.prop_cycle'] = self.ColorCycle
+        for mycycler in [self.LinestyleCycle,self.MarkerCycle]:
+            if mycycler is not None:
+                mpl.rcParams['axes.prop_cycle'] +=  mycycler
+        mpl.rcParams['lines.markersize'] = markersize
+        mpl.rcParams['lines.linewidth'] = linewidth
+        mpl.rcParams['lines.markeredgewidth'] = markeredgewidth
+        mpl.rcParams['lines.markerfacecolor'] = 'none'
+        mpl.rcParams.update({'font.size': fontsize})
 
 class Mesh1d():
     def __init__(self,lp,rp,N,periodic=False) -> None:
@@ -62,7 +113,7 @@ def PVD_Generate(pvd_path,folder_path_set:list,pvd_name,T_end_set:list=[np.inf])
         except:
             # Arrange vtu files in alphabetical order by file name
             print('No Mapping data!')
-            vtu_name = [fname.split('.')[0] for fname in FO.Get_File_List(abs_path) if fname.endswith('vtu')]
+            vtu_name = [fname.split('.')[0] for fname in Get_File_List(abs_path) if fname.endswith('vtu')]
             time_set = np.array(list(range(len(vtu_name))))
         # find the index of time steps in the range (default time_set increases)
         index = (time_set>=T_begin) & (time_set<T_end)
@@ -114,13 +165,12 @@ class Vtk_out:
         else:
             self.done = True
         self.Rel_Mapping = {}
-        np.save(file=os.path.join(pathname,'Tset.npy'),arr=self.Tsets)
     
     def GenerateMapping(self, filepath, LoadT=0):
         '''
             LoadT = 0 version
         '''
-        vtu_list = [fname for fname in FO.Get_File_List(filepath) if fname.endswith('vtu')]
+        vtu_list = [fname for fname in Get_File_List(filepath) if fname.endswith('vtu')]
         n_file = len(vtu_list)
         myTSets = [t for t in self.Tsets if t>=LoadT]
         for ii, T in enumerate(myTSets):
@@ -246,7 +296,7 @@ class yxt_1d_out(Vtk_out):
         self.t_List = []
         self.x_ref = x_save_ref
         Mesh_Obj = Mesh1d(min(x_save_ref),max(x_save_ref),len(x_save_ref)-1)
-        self.mesh     = Mesh(Mesh_Obj.ngmesh)
+        self.mesh     = ngsolve.Mesh(Mesh_Obj.ngmesh)
         self.save_fem = H1(self.mesh)
         self.funvalue = GridFunction(self.save_fem)
 

@@ -9,7 +9,7 @@ from IO_Func import yxt_1d_out
 from ngsolve import *
 from Exact_Sol import *
 
-def Main(dim,L,N_S,N_T,T,k_T,p_S,Output,Sol_Type,Ncore,Test_Name):
+def Main(dim,L,N_S,N_T,T,k_T,p_S,Output,Sol_Type,Ncore,Test_Name,PPC=True):
     '''
         dim: dimension of the problem
         L: half length of the truncated computational domain in 1d, [-L,L] 
@@ -21,6 +21,7 @@ def Main(dim,L,N_S,N_T,T,k_T,p_S,Output,Sol_Type,Ncore,Test_Name):
         Output: decide whether print the numerical solution
             Optional: ["Err", "Sol", "All"]
         Sol_Type: decide which exact solution is used
+        PPC: true for using post-processing correction
     '''
 
     Lap_opt = 'Dirichlet'
@@ -28,13 +29,19 @@ def Main(dim,L,N_S,N_T,T,k_T,p_S,Output,Sol_Type,Ncore,Test_Name):
     N_thres = 1e-10
     ref_order = 1
     dt = T/N_T
+    STD = not PPC
 
     print('Parameter of this example:')
     print('dim = {}, T_collo = {}, S_order = {}'.format(dim, k_T,p_S))
     print('L = {}, N_S = {}, T = {}, N_T = {}'.format(L, N_S, T, N_T))
+    
+    if PPC:
+        prefix = "PPC"
+    else:
+        prefix = "GL"
 
     suffix = 'L{}_{}_nc{}_o{}_T_{}_{}'.format(L,N_S,k_T,p_S,T,N_T).replace('/',':')
-    BaseDirPath = '../{}d_{}/{}/Conv_{}'.format(dim,Sol_Type,Test_Name,suffix)
+    BaseDirPath = './{}d_{}/{}/{}_{}'.format(dim,Sol_Type,Test_Name,prefix,suffix)
     if not os.path.exists(BaseDirPath):
         os.makedirs(BaseDirPath)
 
@@ -59,7 +66,7 @@ def Main(dim,L,N_S,N_T,T,k_T,p_S,Output,Sol_Type,Ncore,Test_Name):
     myObj.WeakForm4Newton_Iter()
     myObj.Sol_Setting(Exact_u_Dict[Sol_Type])
     myObj.IniByProj()
-    myObj.Solving(save_obj=savefunc_obj,ThreadNum=Ncore)
+    myObj.Solving(save_obj=savefunc_obj,ThreadNum=Ncore,Eig_opt=STD)
     Res_dict = {
         "endt_T_set":np.linspace(0,T,N_T+1)[1:],
         "endt_L2err_ex":myObj.endt_L2_ex_err_set,
@@ -80,7 +87,8 @@ def Main(dim,L,N_S,N_T,T,k_T,p_S,Output,Sol_Type,Ncore,Test_Name):
         print(max([max(myObj.endt_H1_ex_err_set),max(myObj.int_H1_ex_err_set)]))
     except:
         pass
-    np.save(os.path.join(BaseDirPath,res_name),Res_dict,allow_pickle=True)
+    if Output in ["Err", "All"]:
+        np.save(os.path.join(BaseDirPath,res_name),Res_dict,allow_pickle=True)
 
     try:
         xyt_Fig_Name = 'NumSol_Nspace_{}_NT_{}.npy'.format(N_S,N_T)

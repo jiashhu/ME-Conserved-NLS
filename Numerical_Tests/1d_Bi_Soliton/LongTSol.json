@@ -1,0 +1,14 @@
+{
+    "dim": 1,
+    "Sol_Type": "Bi_Soliton",
+    "L": 20,
+    "N_S": 640,
+    "N_T": 4096,
+    "T": 128,
+    "k_T": 2,
+    "p_S": 3,
+    "Output": "All",
+    "Ncore": 20,
+    "Test_Name": "LongTSol",
+    "PPC": [true, false]
+}
