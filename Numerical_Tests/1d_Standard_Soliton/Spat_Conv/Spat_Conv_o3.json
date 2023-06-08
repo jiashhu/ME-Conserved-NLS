@@ -1,0 +1,14 @@
+{
+    "dim": 1,
+    "Sol_Type": "Standard_Soliton",
+    "L": 40,
+    "N_S": [120, 180, 240, 300, 360],
+    "N_T": 1000,
+    "T": 1,
+    "k_T": 3,
+    "p_S": 3,
+    "Output": "Err",
+    "Ncore": 20,
+    "Test_Name": "Spat_Conv",
+    "PPC": true
+}

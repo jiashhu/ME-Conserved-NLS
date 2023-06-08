@@ -52,53 +52,51 @@ def Main(dim,L,N_S,N_T,T,k_T,p_S,Output,Sol_Type,Ncore,Test_Name,PPC=True):
         savefunc_obj = yxt_1d_out(np.linspace(lp,rp,2**10+1),[T],[20],BaseDirPath)
     else:
         savefunc_obj = None
+    
+    Res_dict = {}
+    # # Generate 1d Mesh
+    # Mesh_Obj = Mesh1d(lp,rp,N_S,periodic=False)
+    # mesh     = Mesh(Mesh_Obj.ngmesh)
+    # myObj    = CPN_Converg_1d_Focus_Newt(
+    #     mesh, kappa = 2, p = 3,
+    #     order = p_S, n_collocation = k_T, 
+    #     dt = dt, T = T, N_thres = N_thres, 
+    #     ref_order = ref_order
+    # )
+    # myObj.Set_Lap_Type(Lap_opt)
+    # myObj.WeakForm4Newton_Iter()
+    # myObj.Sol_Setting(Exact_u_Dict[Sol_Type])
+    # myObj.IniByProj()
+    # myObj.Solving(save_obj=savefunc_obj,ThreadNum=Ncore,Eig_opt=STD)
+    # Res_dict = {
+    #     "endt_T_set":np.linspace(0,T,N_T+1)[1:],
+    #     "endt_L2err_ex":myObj.endt_L2_ex_err_set,
+    #     "endt_H1err_ex":myObj.endt_H1_ex_err_set,
+    #     "int_L2err_ex":myObj.int_L2_ex_err_set,
+    #     "int_H1err_ex":myObj.int_H1_ex_err_set,
+    #     "endt_massc":myObj.endt_mas_c_set,
+    #     "endt_energ":myObj.endt_eng_c_set,
+    #     "int_massc":myObj.int_mas_c_set,
+    #     "int_energ":myObj.int_eng_c_set,
+    #     "int_T_set":myObj.int_tset,
+    #     "endt_N_iter":myObj.endt_Newton_it,
+    #     "endt_Param_iter":myObj.endt_alpbet_it,
+    #     "endt_exactu_H1":myObj.endt_exactu_H1,
+    #     "int_exactu_H1":myObj.int_exactu_H1,
+    # }
 
-    # Generate 1d Mesh
-    Mesh_Obj = Mesh1d(lp,rp,N_S,periodic=False)
-    mesh     = Mesh(Mesh_Obj.ngmesh)
-    myObj    = CPN_Converg_1d_Focus_Newt(
-        mesh, kappa = 2, p = 3,
-        order = p_S, n_collocation = k_T, 
-        dt = dt, T = T, N_thres = N_thres, 
-        ref_order = ref_order
-    )
-    myObj.Set_Lap_Type(Lap_opt)
-    myObj.WeakForm4Newton_Iter()
-    myObj.Sol_Setting(Exact_u_Dict[Sol_Type])
-    myObj.IniByProj()
-    myObj.Solving(save_obj=savefunc_obj,ThreadNum=Ncore,Eig_opt=STD)
-    Res_dict = {
-        "endt_T_set":np.linspace(0,T,N_T+1)[1:],
-        "endt_L2err_ex":myObj.endt_L2_ex_err_set,
-        "endt_H1err_ex":myObj.endt_H1_ex_err_set,
-        "int_L2err_ex":myObj.int_L2_ex_err_set,
-        "int_H1err_ex":myObj.int_H1_ex_err_set,
-        "endt_massc":myObj.endt_mas_c_set,
-        "endt_energ":myObj.endt_eng_c_set,
-        "int_massc":myObj.int_mas_c_set,
-        "int_energ":myObj.int_eng_c_set,
-        "int_T_set":myObj.int_tset,
-        "endt_N_iter":myObj.endt_Newton_it,
-        "endt_Param_iter":myObj.endt_alpbet_it,
-        "endt_exactu_H1":myObj.endt_exactu_H1,
-        "int_exactu_H1":myObj.int_exactu_H1,
-    }
-    try:
-        print(max([max(myObj.endt_H1_ex_err_set),max(myObj.int_H1_ex_err_set)]))
-    except:
-        pass
-    if Output in ["Err", "All"]:
-        np.save(os.path.join(BaseDirPath,res_name),Res_dict,allow_pickle=True)
+    # if Output in ["Err", "All"]:
+    #     np.save(os.path.join(BaseDirPath,res_name),Res_dict,allow_pickle=True)
 
-    try:
-        xyt_Fig_Name = 'NumSol_Nspace_{}_NT_{}.npy'.format(N_S,N_T)
-        np.save(os.path.join(BaseDirPath,xyt_Fig_Name),{
-            'fval': savefunc_obj.Data_List,
-            'tset': savefunc_obj.t_List,
-            'xref': savefunc_obj.x_ref
-        },allow_pickle=True)
-    except:
-        pass
+    # try:
+    #     xyt_Fig_Name = 'NumSol_Nspace_{}_NT_{}.npy'.format(N_S,N_T)
+    #     np.save(os.path.join(BaseDirPath,xyt_Fig_Name),{
+    #         'fval': savefunc_obj.Data_List,
+    #         'tset': savefunc_obj.t_List,
+    #         'xref': savefunc_obj.x_ref
+    #     },allow_pickle=True)
+    # except:
+    #     pass
 
 if __name__ == "__main__":
     # Get the file path from the command-line argument
@@ -112,6 +110,7 @@ if __name__ == "__main__":
     param_names = inspect.signature(Main).parameters.keys()
     matching_data = {k: v for k, v in data.items() if k in Main.__code__.co_varnames}
     data_dict = dict(data)
+    k = 0
     for param_name in matching_data:
         # Get the values to test for the current parameter
         value = data[param_name]
@@ -129,6 +128,7 @@ if __name__ == "__main__":
                 
                 # Call Main function with updated JSON data
                 Main(**data_copy)
-
-    Main(**matching_data)
+                k = 1
+    if k == 0:
+        Main(**matching_data)
 

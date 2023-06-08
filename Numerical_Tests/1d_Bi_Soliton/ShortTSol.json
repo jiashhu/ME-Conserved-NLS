@@ -9,5 +9,6 @@
   "p_S": 3,
   "Output": "Sol",
   "Ncore": 20,
-  "Test_Name": "ShortTSol"
+  "Test_Name": "ShortTSol",
+  "PPC": true
 }

@@ -11,7 +11,10 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "justMyCode": true,
-            "args": "/Users/liubocheng/Documents/2023/ME-Conserved-NLS/Numerical_Tests/1d_Bi_Soliton/Param_ShortTimeSol.json"
+            "args": "/Users/liubocheng/Documents/2023/ME-Conserved-NLS/Numerical_Tests/1d_Standard_Soliton/Spat_Conv",
+            "env": {
+                "PYTHONPATH": "/Users/liubocheng/Documents/2023/ME-Conserved-NLS/Packages"
+            }
         }
     ]
 }

@@ -25,6 +25,102 @@ def Get_File_List(file_path):
         dir_list = sorted(dir_list, key=lambda x: os.path.getctime(os.path.join(file_path,x)))
         return dir_list
 
+def Transformh(L_Total,Nset):
+    h = [L_Total/Ni for Ni in Nset]
+    return h
+    
+def GenerateLim(minh,maxh,minE,maxE,adj_param,opt='centeral'):
+    if opt == 'max':
+        ylim1,ylim2 = 10**np.floor(np.log(minE)/np.log(10)),10**np.ceil(np.log(maxE)/np.log(10))
+        ratio = ylim2/ylim1
+        xlim1,xlim2 = np.sqrt(minh*maxh)/np.sqrt(ratio), np.sqrt(minh*maxh)*np.sqrt(ratio)
+    elif opt == 'centeral':
+        cx = np.log(np.sqrt(minh*maxh))/np.log(10)
+        cy = np.log(np.sqrt(minE*maxE))/np.log(10)
+        hx = np.log(maxh/minh)/np.log(10)
+        hy = np.log(maxE/minE)/np.log(10)
+        ylim1, ylim2 = 10**(cy-hy/2), 10**(cy+hy/2)
+        xlim1, xlim2 = 10**(cx-hx/2), 10**(cx+hx/2)
+    return xlim1,xlim2,ylim1,ylim2
+
+def AnalyzeParam(h,err,order,adj_param,L_Total,xyCoef=None,add_order=0,opt='centeral'):
+    # big h corresponds to big error, adj_param<1
+    minE,maxE = min(err),max(err)
+    minh,maxh = min(h), max(h)
+    if np.log(err[0]/err[-1])/np.log(h[0]/h[-1]) > 0:
+        pass
+    else:
+        h = Transformh(L_Total,h)
+        minh,maxh = min(h), max(h)
+    if xyCoef is not None:
+        xlim1,xlim2,ylim1,ylim2 = GenerateLim(minh,maxh,minE,maxE,adj_param,opt=opt)
+        xlim1,xlim2,ylim1,ylim2 = np.array([xlim1,xlim2,ylim1,ylim2])*xyCoef
+    else:
+        xlim1,xlim2,ylim1,ylim2 = GenerateLim(minh,maxh,minE,maxE,adj_param,opt=opt)
+
+    hstr = [format(hi,'0.2e') for hi in h]
+    refh = h.copy()
+    refE = [maxE*adj_param**(float(order)+add_order)*(hi/maxh)**(float(order)+add_order) for hi in h]
+    return h, err, refh, refE, hstr, [xlim1,xlim2], [ylim1,ylim2]
+
+class CanonicalErrPlot():
+    def __init__(self,Res,Zoom=None,XYTick=None,Legend=None,adj_p=0.8,opt='centeral') -> None:
+        self.Res = Res
+        self.index = 1
+        self.adj_param = adj_p
+        self.Zoom = Zoom
+        self.XYTick = XYTick
+        self.Legend = Legend
+        self.add_order = self.Res['Params']['add_order']
+        self.opt = opt
+        self.var = self.Res['Params']['var']
+
+    def ReadParam(self):
+        self.Err_Data = self.Res['Converg']
+        self.fig_name, self.Param, self.Err = [self.Res['Params'][index] for index in ['Name','Param','Err']]
+        self.n_order = len(self.Err_Data)
+        if type(self.adj_param) is float:
+            self.adj_param = [self.adj_param]*self.n_order
+        self.L_Tot = self.Res['Params']['Param_Total']
+
+    def DrawParam(self,fig):
+        set_ylabel = True
+        for key,val in self.Err_Data.items():
+            order = key.split('_Conv_o')[-1]
+            ax = fig.add_subplot(1,self.n_order,self.index)
+            h, err = val[self.Param], val[self.Err]
+            # self.index starts from 1
+            h,err,refh,refE,hstr,xlim,ylim = AnalyzeParam(h,err,order,self.adj_param[self.index-1],self.L_Tot,add_order=self.add_order,opt=self.opt)
+            ax.loglog(h,err,label=self.Legend[order][0])
+            ax.loglog(refh,refE,label=self.Legend[order][1])
+            ax.grid(True,which="both",ls="--")            
+            try:
+                if self.Zoom is not None:
+                    xlim = np.array(xlim)*np.array(self.Zoom[order]['x'])
+                    ylim = np.array(ylim)*np.array(self.Zoom[order]['y'])
+                ax.set_xlim(xlim)
+                ax.set_ylim(ylim)
+            except:
+                pass
+            ax.set_xlabel(self.Res['Params']['xlabel'])
+            if set_ylabel:
+                ax.set_ylabel('$H^1 error$')
+                set_ylabel = False
+            ax.set_title('='.join([self.var,order]))
+
+            try:
+                if self.XYTick[order] is not None:
+                    ax.set_xticks(self.XYTick[order]['xtick'])
+                    ax.set_xticklabels(self.XYTick[order]['xticklabels'])
+                    ax.set_yticks(self.XYTick[order]['ytick'])
+                    ax.set_yticklabels(self.XYTick[order]['yticklabels'])
+                    ax.set_yticklabels([],minor=True)
+            except:
+                ax.set_xticklabels([],minor=True)
+                ax.set_yticklabels([],minor=True)
+            ax.legend(loc='lower right')
+            self.index += 1
+
 class PlotLineStyleObj():
     def __init__(self) -> None:
         self.ColorCycle = None
@@ -333,3 +429,34 @@ class Printer():
         if told>=T_begin+(T-T_begin)*self.n_now/self.nprint:
             print("{}-Finished {} per cent".format(LogTime(),self.n_now/self.nprint*100))
             self.n_now += 1
+
+def PosRemove0(mystr:str):
+    delet_terms = ['e+00']
+    for terms in delet_terms:
+        if terms in mystr:
+            mystr = mystr.split(terms)[0]
+    stripzero = True
+    if 'e+' in mystr:
+        keyw = 'e+'
+    elif 'e-' in mystr:
+        keyw = 'e-'
+    else:
+        stripzero = False
+    if stripzero:
+        mystr = keyw.join(res.strip('0') for res in mystr.split(keyw))
+    return mystr
+
+def GenerateTick_Label(tick_val:list,opt):
+    tick_name = opt+'tick'
+    tlabel_name = tick_name+'labels'
+    tlabel = [PosRemove0(format(v,'0.0e')) for v in tick_val]
+    mydict = dict(zip([tick_name,tlabel_name],[tick_val,tlabel]))
+    return mydict
+
+def GenerateXYTick(val:list):
+    Res = []
+    for x,y in val:
+        res = GenerateTick_Label(x,'x')
+        res.update(GenerateTick_Label(y,'y'))
+        Res.append(res)
+    return Res

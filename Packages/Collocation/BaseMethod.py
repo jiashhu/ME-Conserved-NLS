@@ -539,7 +539,7 @@ class CPN_Converg_1d_Focus_Newt(Coll_Proj_NLS_Newt):
                     save_obj.Output(mesh=self.mesh,tnow=self.t,function=[Norm(self.un)],command='')
 
 class CPN_Converg_2d_Newt(CPN_Converg_1d_Focus_Newt):
-    def __init__(self, mesh, kappa, p, order, n_collocation, dt, T, N_thres, quad_order, ref_order) -> None:
+    def __init__(self, mesh, kappa, p, order, n_collocation, dt, T, N_thres, ref_order, quad_order=5) -> None:
         super().__init__(mesh, kappa, p, order, n_collocation, dt, T, N_thres, quad_order, ref_order)
 
 class PP_Process:

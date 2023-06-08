@@ -20,5 +20,6 @@ Exact_u_Dict = {
     'Bi_Soliton': lambda t: (
             exp(1j*sol_M**2*t)*sol_M*sech(sol_M*x) - exp(1j*sol_N**2*t)*sol_N*sech(sol_N*x))/(
             np.cosh(J) - np.sinh(J)*(tanh(sol_M*x)*tanh(sol_N*x) + cos((sol_M**2-sol_N**2)*t)*sech(sol_M*x)*sech(sol_N*x))
-        )
+        ),
+    '2d_Soliton': lambda t: 4/(2*exp(x+y-2*np.sqrt(2)*t)+exp(-(x+y-2*np.sqrt(2)*t)))*exp(1j*(t+(x+y)*np.sqrt(2)/2))
 }

@@ -1,0 +1,14 @@
+{
+    "dim": 1,
+    "Sol_Type": "Standard_Soliton",
+    "L": 40,
+    "N_S": 4000,
+    "N_T": [60, 70, 80, 90, 100],
+    "T": 1,
+    "k_T": 2,
+    "p_S": 3,
+    "Output": "Err",
+    "Ncore": 20,
+    "Test_Name": "Temp_Conv",
+    "PPC": true
+}
