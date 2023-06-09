@@ -95,6 +95,9 @@ if __name__ == "__main__":
     f_path = "Sum_{}.json".format(file_path.split('/')[-1])
     save_path = os.path.join(file_path,f_path)
 
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+
     # Write the dictionary to the JSON file
     with open(save_path, "w") as json_file:
         json.dump(Sum_Dict, json_file, indent=4)

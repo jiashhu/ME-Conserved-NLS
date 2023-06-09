@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from Package_MyCode import FO, PlotLineStyleObj
+from IO_Func import *
 import matplotlib.gridspec as gridspec
 import os
 
@@ -19,7 +19,7 @@ fig = plt.figure(figsize=(18,7))
 gs = gridspec.GridSpec(19,1)
 
 def GetMEDiff(f_name):
-    dirs_list = [npyfile for npyfile in FO.Get_File_List(f_name) if npyfile.startswith('dt') and npyfile.endswith('_640.npy')]
+    dirs_list = [npyfile for npyfile in Get_File_List(f_name) if npyfile.startswith('dt') and npyfile.endswith('_640.npy')]
     single_case = dirs_list[-1]
     npy_path = os.path.join(f_name,single_case)
     res = np.load(npy_path,allow_pickle=True).item()

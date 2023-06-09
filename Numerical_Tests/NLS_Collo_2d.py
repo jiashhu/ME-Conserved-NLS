@@ -5,7 +5,7 @@ import json
 import inspect
 import numpy as np
 from Package_G1dMesh import PeriodicSquareUniform
-from Package_ALE_Geometry import Vtk_out
+from IO_Func import Vtk_out
 from ngsolve import *
 from Exact_Sol import *
 
@@ -56,8 +56,9 @@ def Main(dim,L,N_S,N_T,T,k_T,p_S,Output,Sol_Type,Ncore,Test_Name,PPC=True):
     
     Res_dict = {}
     # Generate 2d Mesh
-    # Mesh_Obj = PeriodicSquareUniform(N=N_S,L=L,periodic=False,Rot_opt=True)
-    # mesh     = Mesh(Mesh_Obj.ngmesh)
+    Mesh_Obj = PeriodicSquareUniform(N=N_S,L=L,periodic=False,Rot_opt=True)
+    mesh     = Mesh(Mesh_Obj.ngmesh)
+    savefunc_obj.Output(mesh,[],0,"do")
     # myObj    = CPN_Converg_2d_Newt(
     #     mesh, kappa = 2, p = 3, 
     #     order = p_S, n_collocation = k_T, 
