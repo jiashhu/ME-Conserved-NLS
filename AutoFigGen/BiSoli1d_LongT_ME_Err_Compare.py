@@ -12,8 +12,8 @@ MyplotObj.SetPropCycle(markersize=4)
 
 BaseDir = '../Numerical_Tests/1d_Bi_Soliton/LongTSol/'
 CaseName = 'L20_640_nc2_o3_T_128_4096_0'
-f_name1 = os.path.join(BaseDir,"GL_{}".format(CaseName))
-f_name2 = os.path.join(BaseDir,"PPC_{}".format(CaseName))
+f_name2 = os.path.join(BaseDir,"GL_{}".format(CaseName))
+f_name1 = os.path.join(BaseDir,"PPC_{}".format(CaseName))
 
 fig = plt.figure(figsize=(18,7))
 gs = gridspec.GridSpec(19,1)

@@ -31,7 +31,7 @@ for single_case in dirs_list:
         ax[1].plot(tset,N_iter,'o-',label='Collocation FEM Iteration')
         ax[1].plot(tset,P_iter,'>--',label='Parameter Iteration')
 
-ax[0].legend(loc='upper right')
+ax[0].legend(loc='lower right')
 ax[0].set_ylim([-5e-12,5e-12])
 ax[1].legend()
 ax[1].set_xlabel('t')
