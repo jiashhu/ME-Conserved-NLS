@@ -30,14 +30,6 @@ def GetData(npyfile):
 
     Newton_its = None
     Params_its = None
-    try:
-        Newton_its = res['endt_N_iter']
-        Params_its = res['endt_Param_iter']
-        print('max Newton iters is {}, max Param iters is {}'.format(
-            max(Newton_its), max(Params_its)
-        ))  
-    except:
-        pass
     
     res_back = {
         "InfH1_err": np.real(InfH1_err),

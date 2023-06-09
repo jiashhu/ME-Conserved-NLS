@@ -54,6 +54,3 @@ ax2.set_xlabel('t')
 ax2.set_ylabel('$H^1$ error')
 ax1.legend(bbox_to_anchor=(0.5, 1.4), loc='upper center', ncol=2)
 plt.show()
-
-# SavePath = '/Users/liubocheng/Documents/2022/Code-Collocation_NLS/ReviseCode/Pic'
-# fig.savefig(os.path.join(SavePath,'{}.pdf'.format('Example2EEvst2')),dpi=600,format='pdf')

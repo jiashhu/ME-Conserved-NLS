@@ -28,6 +28,3 @@ ax.set_xlim([-12,12])
 ax.set_xlabel('x')
 ax.set_ylabel('|u|')
 plt.show()
-
-# SavePath = '/Users/hjs/Documents/2022/Collocation_NLS/Draw_Pic/Pic'
-# fig.savefig(os.path.join(SavePath,'{}.eps'.format('NumSim_StdSoliton_T_1d')),dpi=600,format='eps')

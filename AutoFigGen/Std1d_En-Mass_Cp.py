@@ -40,6 +40,3 @@ ax.set_xlabel('$\\tau$')
 ax.set_ylabel('Energy error')
 ax.legend(loc='upper left')
 plt.show()
-
-# SavePath = '/Users/liubocheng/Documents/2022/Code-Collocation_NLS/ReviseCode/Pic'
-# fig.savefig(os.path.join(SavePath,'{}.pdf'.format('Example1EEvsdt')),dpi=600,format='pdf')

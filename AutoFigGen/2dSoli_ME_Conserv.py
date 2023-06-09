@@ -10,7 +10,7 @@ MyplotObj.SetMarkerCycle()
 MyplotObj.SetPropCycle(markersize=4)
 
 CaseName = "../Numerical_Tests/2d_Soliton/"
-f_name = os.path.join(CaseName,'ME_Conserv/PPC_L40_400_nc3_o3_T_1_20')
+f_name = os.path.join(CaseName,'ME_Conserv/PPC_L10_64_nc2_o3_T_1_20')
 fig, ax = plt.subplots(2, 1, figsize=(7, 7))
 dirs_list = Get_File_List(f_name)
 for single_case in dirs_list:

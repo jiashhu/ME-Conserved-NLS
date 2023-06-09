@@ -25,6 +25,3 @@ ax.set_xlabel('x')
 ax.set_ylabel('t')
 plt.colorbar(e)
 plt.show()
-
-# SavePath = '/Users/liubocheng/Documents/2022/Code-Collocation_NLS/ReviseCode/Pic'
-# fig.savefig(os.path.join(SavePath,'{}.pdf'.format('NumerSol')),dpi=600,format='pdf')

@@ -25,7 +25,7 @@ def Main(dim,L,N_S,N_T,T,k_T,p_S,Output,Sol_Type,Ncore,Test_Name,PPC=True):
         PPC: true for using post-processing correction
     '''
 
-    Lap_opt = 'Dirichlet'
+    Lap_opt = 'peri'
     lp, rp = -L, L
     N_thres = 1e-10
     ref_order = 2
@@ -56,7 +56,7 @@ def Main(dim,L,N_S,N_T,T,k_T,p_S,Output,Sol_Type,Ncore,Test_Name,PPC=True):
     
     Res_dict = {}
     # Generate 2d Mesh
-    Mesh_Obj = PeriodicSquareUniform(N=N_S,L=L,periodic=False,Rot_opt=True)
+    Mesh_Obj = PeriodicSquareUniform(N=N_S,L=L,periodic=True,Rot_opt=True)
     mesh     = Mesh(Mesh_Obj.ngmesh)
     myObj    = CPN_Converg_2d_Newt(
         mesh, kappa = 2, p = 3, 

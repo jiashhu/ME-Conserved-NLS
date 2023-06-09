@@ -12,6 +12,7 @@
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": "/Users/liubocheng/Documents/2023/ME-Conserved-NLS/Numerical_Tests/2d_Soliton/Temp_Conv/Temp_Conv_o1.json",
+            "cwd": "/Users/liubocheng/Documents/2023/ME-Conserved-NLS/AutoFigGen",
             "env": {
                 "PYTHONPATH": "/Users/liubocheng/Documents/2023/ME-Conserved-NLS/Packages"
             }
