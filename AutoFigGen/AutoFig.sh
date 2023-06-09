@@ -18,10 +18,13 @@ export PYTHONPATH=$PYTHONPATH:../Packages
 
 # python BiSoli1d_ShortTimeSol.py
 
-python BiSoli1d_LongT_ME_Err_Compare.py
+# python BiSoli1d_LongT_ME_Err_Compare.py
 
 # python BiSoli1d_LongTimeSol.py
 
 ### Example3: soliton in dimension 2
+
+python 2dSoli_Spat_Conv.py
+python 2dSoli_Temp_Conv.py
 
 

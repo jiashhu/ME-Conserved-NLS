@@ -13,13 +13,11 @@ f_path = '../Numerical_Tests/2d_Soliton/Temp_Conv/Sum_Temp_Conv.json'
 # Read Convergece Errors and Plot
 with open(f_path, "r") as json_file:
     Res = json.load(json_file)
-Legendlabel = Res['Params']['Legendlabel']
-
 Res['Params'] = {
         'Legendlabel': 'h',
         'xlabel': '$\\tau$',
         'T': 1,
-        'h': '$2^{-8}$',   # 1/256
+        'h': '$5\\times2^{-6}$',   # 2*L/256
         'L': 1,
         'N_iter_tol': 1e-8,
         'Name': 'LocalSoliton_Temporal',
@@ -29,6 +27,8 @@ Res['Params'] = {
         'add_order': 1,
         'var': 'k' # for collocation
     }
+
+Legendlabel = Res['Params']['Legendlabel']
 
 _order_key = ["2","3","4"]
 Zoom_xy_scale = [

@@ -28,9 +28,11 @@ export PYTHONPATH=$PYTHONPATH:../Packages
 
 # python Data_Analyse_H1err.py 2d_Soliton/Spat_Conv
 
-python NLS_Collo_2d.py 2d_Soliton/Temp_Conv/Temp_Conv_o2.json
-python NLS_Collo_2d.py 2d_Soliton/Temp_Conv/Temp_Conv_o3.json
-python NLS_Collo_2d.py 2d_Soliton/Temp_Conv/Temp_Conv_o4.json
+# python NLS_Collo_2d.py 2d_Soliton/Temp_Conv/Temp_Conv_o2.json
+# python NLS_Collo_2d.py 2d_Soliton/Temp_Conv/Temp_Conv_o3.json
+# python NLS_Collo_2d.py 2d_Soliton/Temp_Conv/Temp_Conv_o4.json
 
 # python Data_Analyse_H1err.py 2d_Soliton/Temp_Conv
+
+python NLS_Collo_2d.py 2d_Soliton/ME_Conserv/ME_Conserv.json
 

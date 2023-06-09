@@ -9,7 +9,7 @@ MyplotObj.SetLinestyleCycle()
 MyplotObj.SetMarkerCycle()
 MyplotObj.SetPropCycle(markersize=4)
 
-CaseName = "../Numerical_Tests/1d_Standard_Soliton/"
+CaseName = "../Numerical_Tests/2d_Soliton/"
 f_name = os.path.join(CaseName,'ME_Conserv/PPC_L40_400_nc3_o3_T_1_20')
 fig, ax = plt.subplots(2, 1, figsize=(7, 7))
 dirs_list = Get_File_List(f_name)
@@ -32,7 +32,7 @@ for single_case in dirs_list:
         ax[1].plot(tset,P_iter,'>--',label='Parameter Iteration')
 
 ax[0].legend(loc='upper right')
-ax[0].set_ylim([-1e-14,1e-14])
+ax[0].set_ylim([-5e-12,5e-12])
 ax[1].legend()
 ax[1].set_xlabel('t')
 ax[1].set_xlim([0,1])

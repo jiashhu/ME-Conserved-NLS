@@ -92,11 +92,8 @@ if __name__ == "__main__":
         Sum_Dict["Converg"][Param.split('.')[0]] = ErrDict
 
     # Specify the file path
-    f_path = "Sum_{}.json".format(file_path.split('/')[-1])
+    f_path = "Sum_{}.json".format(os.path.basename(file_path))
     save_path = os.path.join(file_path,f_path)
-
-    if not os.path.exists(save_path):
-        os.makedirs(save_path)
 
     # Write the dictionary to the JSON file
     with open(save_path, "w") as json_file:
