@@ -24,4 +24,4 @@ for %%P in (%packages%) do (
 
 echo All packages have been processed.
 
-set "PYTHONPATH=%PYTHONPATH%;./Packages"
+set "PYTHONPATH=%PYTHONPATH%;.\Packages"
