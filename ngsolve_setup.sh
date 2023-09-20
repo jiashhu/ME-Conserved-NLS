@@ -59,4 +59,4 @@ done
 
 echo All packages have been processed.
 
-export "PYTHONPATH=%PYTHONPATH%:.\Packages"
+export "PYTHONPATH=%PYTHONPATH%:./Packages"
